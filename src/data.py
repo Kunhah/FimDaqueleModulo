@@ -13,9 +13,10 @@ def explorar(df: pd.DataFrame) -> None:
     """Explora o DataFrame, exibindo informações básicas, colunas, resumo estatístico e nulos."""
     print('\n INSPECAO INICIAL DO DATASET')
     print(df.head())
-    print('Formato:', df.shape)
-    print('Colunas:', list(df.columns))
+    print('\nFormato:', df.shape)
+    print('\nColunas:', list(df.columns))
     df.info()
+    print('\nDescrição:\n')
     print(df.describe())
     print('\nValores nulos por coluna:')
     print(df.isnull().sum().sort_values(ascending=False))
@@ -52,6 +53,7 @@ def imputar_nulos(df: pd.DataFrame) -> pd.DataFrame:
     print(f'\n[Nulos] Registros antes: {len(df)}')
     print('[Nulos] Ausentes antes:')
     print(df[COLUNAS_NULOS].isnull().sum())
+    print('\n')
 
     # Calcula a média de cada coluna (os NaN são ignorados no cálculo)
     medias = df[COLUNAS_NULOS].mean()
@@ -59,6 +61,7 @@ def imputar_nulos(df: pd.DataFrame) -> pd.DataFrame:
     df[COLUNAS_NULOS] = df[COLUNAS_NULOS].fillna(medias)
     print('[Nulos] Média usada no preenchimento:')
     print(medias.round(2))
+    print('\n')
 
     print('[Nulos] Ausentes depois:')
     print(df[COLUNAS_NULOS].isnull().sum())
@@ -67,7 +70,7 @@ def imputar_nulos(df: pd.DataFrame) -> pd.DataFrame:
 
 def limpar_dados(df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
     """Aplica todas as etapas de limpeza no DataFrame e retorna os dados limpos junto a um relatório."""
-    print('\n=== LIMPEZA DOS DADOS ===')
+    print('\n LIMPEZA DOS DADOS')
     relatorio = {'iniciais': len(df)}
 
     df = remover_espacos(df.copy())
