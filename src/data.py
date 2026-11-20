@@ -2,6 +2,9 @@ from pathlib import Path
 
 import pandas as pd
 
+COLUNAS_NULOS = ['temperatura_ar_k', 'temperatura_processo_k',
+                 'torque_nm', 'velocidade_rotacao_rpm']
+
 def carregar_dados() -> pd.DataFrame:
     """Lê o arquivo CSV de manutenção preditiva e retorna um DataFrame do Pandas."""
     return pd.read_csv(Path(__file__).resolve().parent.parent / 'data' / 'manutencao_preditiva.csv')
@@ -34,40 +37,45 @@ def remover_espacos(df: pd.DataFrame) -> pd.DataFrame:
     print(contar_espacos_extras(df))
     return df
 
+def remover_duplicados(df: pd.DataFrame) -> pd.DataFrame:
+    """Remove linhas duplicadas, ou seja, cópias exatas de outra linha do DataFrame."""
+    print(f'\n[Duplicados] Registros antes: {len(df)}')
+    print(f'[Duplicados] Linhas duplicadas encontradas: {df.duplicated().sum()}')
+    df_limpo = df.drop_duplicates()
+    print(f'[Duplicados] Registros depois: {len(df_limpo)}')
+    return df_limpo
+
 def imputar_nulos(df: pd.DataFrame) -> pd.DataFrame:
-    """Remove registros com valores nulos nas colunas críticas definidas."""
+    """Preenche os nulos de cada coluna com a média dessa coluna."""
+    df = df.copy()
+
     print(f'\n[Nulos] Registros antes: {len(df)}')
     print('[Nulos] Ausentes antes:')
-    print(df[COLUNAS_CRITICAS].isnull().sum())
-    df_limpo = df.dropna(subset=COLUNAS_CRITICAS)
-    print(f'[Nulos] Registros removidos: {len(df) - len(df_limpo)}')
+    print(df[COLUNAS_NULOS].isnull().sum())
+
+    # Calcula a média de cada coluna (os NaN são ignorados no cálculo)
+    medias = df[COLUNAS_NULOS].mean()
+    # Troca só os NaN de cada coluna pela média da própria coluna
+    df[COLUNAS_NULOS] = df[COLUNAS_NULOS].fillna(medias)
+    print('[Nulos] Média usada no preenchimento:')
+    print(medias.round(2))
+
     print('[Nulos] Ausentes depois:')
-    print(df_limpo[COLUNAS_CRITICAS].isnull().sum())
-    print(f'[Nulos] Registros depois: {len(df_limpo)}')
-    return df_limpo
+    print(df[COLUNAS_NULOS].isnull().sum())
+    print(f'[Nulos] Registros depois: {len(df)}')
+    return df
 
 def limpar_dados(df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
     """Aplica todas as etapas de limpeza no DataFrame e retorna os dados limpos junto a um relatório."""
     print('\n=== LIMPEZA DOS DADOS ===')
-    
-    bruto = df.copy()
+    relatorio = {'iniciais': len(df)}
 
-    df_sem_espacos = remover_espacos(bruto.copy())
-    removidos_data = bruto.index.difference(df_sem_espacos.index)
-    
-    df_final = imputar_nulos(df_sem_espacos)
-    removidos_nulos = df_sem_espacos.index.difference(df_final.index)
+    df = remover_espacos(df.copy())
+    df = remover_duplicados(df)
+    relatorio['duplicados_removidos'] = relatorio['iniciais'] - len(df)
 
-    removidos = pd.concat([
-        bruto.loc[removidos_data].assign(motivo='data invalida'),
-        bruto.loc[removidos_nulos].assign(motivo='valor ausente'),
-    ])
-    
-    relatorio = {
-        'iniciais': len(bruto),
-        'finais': len(df_final),
-        'clientes_sinalizados': int(df_final['cliente_fora_do_padrao'].sum()),
-        'removidos': removidos,
-    }
-    
-    return df_final, relatorio
+    relatorio['nulos_preenchidos'] = df[COLUNAS_NULOS].isnull().sum().to_dict()
+    df = imputar_nulos(df)
+    relatorio['finais'] = len(df)
+
+    return df, relatorio
