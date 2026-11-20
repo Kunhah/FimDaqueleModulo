@@ -150,7 +150,7 @@ Depois é só abrir o `manutencao_preditiva.ipynb` e rodar todas as células, na
 
 ## Vídeo de demonstração
 
-
+https://www.youtube.com/watch?v=GuuCbD3v66k
 
 ---
 
