@@ -15,7 +15,7 @@ Tudo está no notebook `manutencao_preditiva.ipynb`, dividido nas 7 fases do enu
 1. **EDA:** dimensões, tipos, `describe()` e três gráficos (barras da classe alvo, histogramas e mapa de calor da correlação de Pearson).
 2. **Limpeza:** remove duplicados (não havia nenhum), preenche os 500 nulos de cada sensor com a média e faz boxplots para olhar os outliers.
 3. **Feature engineering:** cria a coluna `potencia = torque_nm * velocidade_rotacao_rpm`.
-4. **Divisão e balanceamento:** separa X e y, divide em 80% treino e 20% teste com `stratify=y` e aplica o SMOTE **só no treino**.
+4. **Divisão dos dados:** separa X e y e divide em 80% treino e 20% teste com `stratify=y`. Não apliquei nenhuma técnica de reamostragem.
 5. **Escalonamento:** `StandardScaler` só para o KNN. A árvore fica sem escala.
 6. **Overfitting:** KNN com K = 3, 5 e 7 e árvore com `max_depth` = 3, 5 e `None`, comparando a acurácia de treino e de teste.
 7. **Veredito:** compara o melhor KNN com a melhor árvore na base de teste.
@@ -25,14 +25,15 @@ Tudo está no notebook `manutencao_preditiva.ipynb`, dividido nas 7 fases do enu
 ```
 FimDaqueleModulo/
 ├── manutencao_preditiva.ipynb   # notebook principal, com as 7 fases e as explicações
-├── main_temp.py                 # script de teste rápido: só gera os gráficos da EDA
+├── main.py                      # roda o pipeline completo pelo terminal
 ├── requirements.txt             # bibliotecas e versões usadas
+├── outputs/                     # gráficos gerados pelo pipeline (.png)
 ├── data/
 │   └── manutencao_preditiva.csv # base de dados (10.000 máquinas)
 ├── src/
 │   ├── data.py                  # carga, inspeção e limpeza
 │   ├── graphs.py                # gráficos da EDA e boxplots
-│   └── training.py              # feature engineering, divisão, SMOTE, escala e modelos
+│   └── training.py              # feature engineering, divisão, escala e modelos
 └── ExercicioMeioDoModulo/       # a outra atividade (ver o final deste README)
 ```
 
@@ -66,15 +67,15 @@ Todos os gráficos usam as mesmas cores: azul para máquinas normais e vermelho 
 | Função | Fase | O que faz |
 |---|---|---|
 | `potencia(df)` | 3 | Cria a coluna `potencia = torque_nm * velocidade_rotacao_rpm`. |
-| `dividir_e_balancear(df)` | 4 | Separa X e y, transforma o `tipo` (L/M/H) em colunas numéricas, divide em 80/20 com `stratify=y` e aplica o SMOTE só no treino. Tira do X o `udi`, o `id_produto` e todas as colunas de falha, para o modelo não "ver a resposta". |
+| `dividir_e_balancear(df)` | 4 | Separa X e y, transforma o `tipo` (L/M/H) em colunas numéricas, e divide em 80/20 com `stratify=y`. Tira do X o `udi`, o `id_produto` e todas as colunas de falha, para o modelo não "ver a resposta". |
 | `escalar_para_knn(X_treino, X_teste)` | 5 | Aplica o `StandardScaler` nas colunas contínuas: `fit_transform` no treino e `transform` no teste. Devolve cópias, então os dados da árvore continuam sem escala. |
-| `testar_knn(...)` | 6 | Treina o KNN com K = 3, 5 e 7 e devolve uma tabela com a acurácia de treino, a de teste e a diferença entre elas (`gap`). |
-| `testar_arvore(...)` | 6 | Faz o mesmo com a árvore, usando `max_depth` = 3, 5 e `None`. |
+| `treinar_knn(...)` | 6 | Treina o KNN com K = 3, 5 e 7 e devolve uma tabela com a acurácia de treino, a de teste e a diferença entre elas (`gap`). |
+| `treinar_arvore(...)` | 6 | Faz o mesmo com a árvore, usando `max_depth` = 3, 5 e `None`. |
 | `veredito(tabela_knn, tabela_arvore)` | 7 | Escolhe a melhor configuração de cada modelo pela acurácia no teste, compara as duas e diz qual venceu. |
 
 ## Resultados
 
-Todos os números abaixo saem do notebook e podem ser reproduzidos, porque a divisão, o SMOTE e a árvore usam `random_state=42`.
+Todos os números abaixo saem do notebook e podem ser reproduzidos, porque a divisão e a árvore usam `random_state=42`.
 
 ### O que a EDA mostrou
 
@@ -90,41 +91,41 @@ Todos os números abaixo saem do notebook e podem ser reproduzidos, porque a div
 | Duplicados | Nenhum encontrado (continuaram 10.000 linhas). |
 | Nulos | 2.000 valores preenchidos com a média (500 por sensor). Nenhuma linha foi descartada. |
 | Divisão 80/20 | 8.000 no treino e 2.000 no teste, os dois com cerca de 3,4% de falhas graças ao `stratify=y`. |
-| SMOTE (só no treino) | O treino foi de 7.729 normais e 271 falhas para 7.729 de cada (15.458 linhas). |
-| Teste | Ficou como estava: 1.932 normais e 68 falhas. |
+| Balanceamento | Nenhuma reamostragem: o treino ficou com 7.729 normais e 271 falhas. |
+| Teste | 1.932 normais e 68 falhas. |
 
 ### KNN (dados escalados)
 
 | K | Acurácia no treino | Acurácia no teste | Gap |
 |---|---|---|---|
-| **3** | 96,8% | **90,5%** | 6,3 p.p. |
-| 5 | 95,8% | 89,5% | 6,3 p.p. |
-| 7 | 95,2% | 88,8% | 6,4 p.p. |
+| 3 | 98,32% | 97,20% | 1,12 p.p. |
+| 5 | 97,92% | 97,30% | 0,62 p.p. |
+| **7** | 97,69% | **97,40%** | 0,29 p.p. |
 
-As três versões têm um gap de cerca de 6 pontos, um overfitting moderado. Aumentar o K diminuiu a acurácia no treino e no teste sem reduzir o gap. O K = 3 foi o melhor no teste.
+O gap diminui conforme o K aumenta (de 1,12 para 0,29 ponto), porque o modelo passa a olhar mais vizinhos e fica menos sensível a pontos isolados. O K = 7 foi o melhor no teste e também o mais estável.
 
 ### Árvore de Decisão (dados sem escala)
 
 | `max_depth` | Acurácia no treino | Acurácia no teste | Gap |
 |---|---|---|---|
-| 3 | 85,6% | 84,7% | 0,9 p.p. |
-| 5 | 90,1% | 90,2% | -0,1 p.p. |
-| **None** | 99,6% | **93,0%** | 6,6 p.p. |
+| 3 | 97,59% | 97,25% | 0,34 p.p. |
+| 5 | 98,10% | 97,45% | 0,65 p.p. |
+| **None** | 99,90% | **98,20%** | 1,70 p.p. |
 
-- **`max_depth=3`:** a árvore é rasa demais e erra mais que as outras, tanto no treino quanto no teste (underfitting).
-- **`max_depth=5`:** é a configuração mais estável. O treino e o teste dão praticamente o mesmo resultado.
-- **`max_depth=None`:** a árvore cresce sem limite e quase decora o treino (99,6%), o que é sinal claro de overfitting. Mesmo assim, teve a maior acurácia no teste.
+- **`max_depth=3`:** a árvore é rasa e é a que menos acerta no teste (97,25%), mas o treino e o teste ficam bem próximos.
+- **`max_depth=5`:** é a configuração mais equilibrada, com gap pequeno (0,65) e 97,45% no teste.
+- **`max_depth=None`:** a árvore cresce sem limite e quase decora o treino (99,90%), o que é sinal claro de overfitting (é o maior gap, 1,70). Mesmo assim, teve a maior acurácia no teste.
 
 ### Veredito
 
 | Modelo | Melhor configuração | Acurácia no teste |
 |---|---|---|
-| KNN | K = 3 | 90,5% |
-| Árvore de Decisão | `max_depth=None` | **93,0%** |
+| KNN | K = 7 | 97,40% |
+| Árvore de Decisão | `max_depth=None` | **98,20%** |
 
-Pelo critério do enunciado, que é a maior acurácia no teste, **o modelo indicado é a Árvore de Decisão**, 2,5 pontos acima do melhor KNN. Se a prioridade for um modelo mais previsível, que não decore o treino, a árvore com `max_depth=5` é a alternativa: perde 2,8 pontos de acurácia, mas tem o mesmo desempenho no treino e no teste.
+Pelo critério do enunciado, que é a maior acurácia no teste, **o modelo indicado é a Árvore de Decisão**, 0,8 ponto acima do melhor KNN. Se a prioridade for um modelo mais previsível, que não decore o treino, a árvore com `max_depth=5` é a alternativa: perde 0,75 ponto de acurácia (97,45% contra 98,20%), mas tem um gap bem menor (0,65 contra 1,70).
 
-**Um cuidado importante:** todas as acurácias ficaram abaixo de 96,6%, que é o quanto acertaria um modelo que sempre responde "não falha". Isso acontece porque o SMOTE faz o modelo dar mais atenção às falhas, e ele passa a dar alguns alarmes falsos em máquinas normais. Para esse problema, a acurácia sozinha não mostra se o modelo realmente encontra as máquinas que vão falhar. Por isso a primeira melhoria da lista abaixo é olhar outras métricas. A análise completa está no notebook.
+**Um cuidado importante:** todas as acurácias ficaram entre 97,2% e 98,2%, só um pouco acima de 96,6%, que é o quanto acertaria um modelo que sempre responde "não falha". O ganho é pequeno porque as falhas são raras, e a acurácia sozinha não mostra se o modelo realmente encontra as máquinas que vão falhar. Por isso a primeira melhoria da lista abaixo é olhar outras métricas. A análise completa está no notebook.
 
 ## Tecnologias
 
@@ -132,7 +133,6 @@ Pelo critério do enunciado, que é a maior acurácia no teste, **o modelo indic
 - pandas e numpy para os dados
 - matplotlib e seaborn para os gráficos
 - scikit-learn para os modelos (KNN e Árvore de Decisão), a divisão e o `StandardScaler`
-- imbalanced-learn para o SMOTE
 
 ## Como executar
 
