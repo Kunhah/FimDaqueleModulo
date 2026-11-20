@@ -11,7 +11,7 @@ def carregar_dados() -> pd.DataFrame:
 
 def explorar(df: pd.DataFrame) -> None:
     """Explora o DataFrame, exibindo informações básicas, colunas, resumo estatístico e nulos."""
-    print('\n=== INSPECAO INICIAL DO DATASET ===')
+    print('\n INSPECAO INICIAL DO DATASET')
     print(df.head())
     print('Formato:', df.shape)
     print('Colunas:', list(df.columns))

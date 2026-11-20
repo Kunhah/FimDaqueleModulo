@@ -1,6 +1,12 @@
+from pathlib import Path
+
+import matplotlib
+matplotlib.use('Agg')  # backend sem janela: os gráficos só são salvos em arquivo
 import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.patches import Patch
+
+PASTA_SAIDA = Path(__file__).resolve().parent.parent / 'outputs'
 
 # Estilo visual padrão para todos os gráficos
 sns.set_theme(style='whitegrid')
@@ -9,6 +15,13 @@ CORES = {'Normal': 'steelblue', 'Falha': 'crimson'}
 COLUNAS = ['temperatura_ar_k', 'temperatura_processo_k',
             'velocidade_rotacao_rpm', 'torque_nm',
             'desgaste_ferramenta_min']
+
+
+def salvar(nome):
+    """Salva a figura atual em outputs/<nome>.png e a fecha."""
+    PASTA_SAIDA.mkdir(exist_ok=True)
+    plt.savefig(PASTA_SAIDA / f'{nome}.png', dpi=150)
+    plt.close()
 
 
 def plotar_grafico_barras(df):
@@ -27,7 +40,7 @@ def plotar_grafico_barras(df):
     ax.set_ylabel('Quantidade de máquinas')
 
     plt.tight_layout()
-    plt.show()
+    salvar('grafico_barras')
 
 def plotar_histogramas(df):
     """Plota histogramas empilhados: a parte vermelha são as máquinas com falha."""
@@ -55,7 +68,7 @@ def plotar_histogramas(df):
     axes[-1].legend(handles=legenda, loc='center', fontsize=12)
 
     plt.tight_layout()
-    plt.show()
+    salvar('histogramas')
 
 def plotar_heatmap(df):
     """Plota um heatmap de correlação entre as COLUNAS e a falha."""
@@ -69,7 +82,7 @@ def plotar_heatmap(df):
                 square=True, linewidths=0.5, ax=ax)
     ax.set_title('Correlação de Pearson — COLUNAS × falha')
     plt.tight_layout()
-    plt.show()
+    salvar('heatmap_correlacao')
 
 def plotar_boxplots(df):
     """Plota o boxplot para cada coluna informada do DataFrame."""
@@ -85,4 +98,4 @@ def plotar_boxplots(df):
         plt.title(f'Boxplot - {coluna}')
 
         plt.tight_layout()
-        plt.show()
+        salvar(f'boxplot_{coluna}')

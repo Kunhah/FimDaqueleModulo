@@ -98,11 +98,11 @@ def treinar_knn(X_treino_esc, X_teste_esc, y_treino, y_teste):
             'acc_treino': modelo.score(X_treino_esc, y_treino),
             'acc_teste':  modelo.score(X_teste_esc,  y_teste),
         })
-    # Cria um DataFrame com a lista de resultados e calcula a diferença entre acurácia de treino e teste
+    # Cria um DataFrame com a lista de resultados com uma coluna extra para a diferença entre acurácia de treino e teste
     tabela = pd.DataFrame(resultados)
     tabela['gap'] = tabela['acc_treino'] - tabela['acc_teste']
 
-    print('\n KNN]')
+    print('\n KNN')
     print(tabela.to_string(index=False, float_format='{:.4f}'.format))
     return tabela
 
@@ -123,7 +123,7 @@ def treinar_arvore(X_treino, X_teste, y_treino, y_teste):
             'acc_treino': modelo.score(X_treino, y_treino),
             'acc_teste':  modelo.score(X_teste,  y_teste),
         })
-    # Cria um DataFrame com a lista de resultados e calcula a diferença entre acurácia de treino e teste
+    # Cria um DataFrame com a lista de resultados com uma coluna extra para a diferença entre acurácia de treino e teste
     tabela = pd.DataFrame(resultados)
     tabela['gap'] = tabela['acc_treino'] - tabela['acc_teste']
 
@@ -132,3 +132,29 @@ def treinar_arvore(X_treino, X_teste, y_treino, y_teste):
     return tabela
 
 
+def veredito(tabela_knn, tabela_arvore):
+    """Seleciona a melhor linha de cada tabela pela acurácia de TESTE e compara."""
+
+    # Seleciona a linha com maior acurácia de teste de cada tabela
+    melhor_knn    = tabela_knn.loc[tabela_knn['acc_teste'].idxmax()]
+    melhor_arvore = tabela_arvore.loc[tabela_arvore['acc_teste'].idxmax()]
+
+    # Mostra o melhor de cada algoritmo
+    print('\n Veredito')
+    print(f"  Melhor KNN:    K={int(melhor_knn['k'])}   "
+          f"acc_treino={melhor_knn['acc_treino']:.4f} | acc_teste={melhor_knn['acc_teste']:.4f}")
+    print(f"  Melhor Árvore: max_depth={melhor_arvore['max_depth']} "
+          f"acc_treino={melhor_arvore['acc_treino']:.4f} | acc_teste={melhor_arvore['acc_teste']:.4f}")
+
+    # Compara as duas acurácias de teste para decidir o vencedor
+    if melhor_knn['acc_teste'] > melhor_arvore['acc_teste']:
+        # KNN teve acerto maior no teste
+        vencedor = f"KNN (K={int(melhor_knn['k'])})"
+    elif melhor_arvore['acc_teste'] > melhor_knn['acc_teste']:
+        # Árvore teve acerto maior no teste (max_depth é texto, pois None foi convertido com str())
+        vencedor = f"Árvore (max_depth={melhor_arvore['max_depth']})"
+    else:
+        # Acurácias idênticas: não há como desempatar só por este critério
+        vencedor = "Empate técnico"
+
+    print(f'\n  Modelo com maior acurácia no TESTE: {vencedor}')
